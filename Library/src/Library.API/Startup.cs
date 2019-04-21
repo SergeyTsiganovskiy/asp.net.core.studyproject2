@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Library.API.Controllers;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -70,6 +71,8 @@ namespace Library.API
                         $"{src.FirstName} {src.LastName}"))
                     .ForMember(dest => dest.Age, opt => opt.MapFrom(src =>
                         src.DateOfBirth.GetCurrentAge()));
+
+                cfg.CreateMap<Book, BookDto>();
             });
 
             app.UseMvc(); 
