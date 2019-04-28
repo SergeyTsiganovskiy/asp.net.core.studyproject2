@@ -68,16 +68,5 @@ namespace Library.API.Controllers
 
             return Ok(authorToReturn);
         }
-
-        [HttpPost("{id}")]
-        public IActionResult BlockAuthorCreation(Guid id)
-        {
-            if (_libraryRepository.AuthorExists(id))
-            {
-                return new StatusCodeResult(StatusCodes.Status409Conflict);
-            }
-
-            return NotFound();
-        }
     }
 }
