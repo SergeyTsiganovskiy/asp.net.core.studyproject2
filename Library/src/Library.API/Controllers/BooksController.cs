@@ -3,20 +3,24 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Library.API.Entities;
+using Library.API.Helpers;
 using Library.API.Models;
 using Library.API.Services;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 namespace Library.API.Controllers
 {
     [Route("api/authors/{authorId}/books")]
     public class BooksController : Controller
     {
+        private ILogger<BooksController> _logger;
         private ILibraryRepository _libraryRepository;
 
-        public BooksController(ILibraryRepository _libraryRepository)
+        public BooksController(ILibraryRepository _libraryRepository, ILogger<BooksController> logger)
         {
+            _logger = logger;
             this._libraryRepository = _libraryRepository;
         }
 
@@ -63,6 +67,17 @@ namespace Library.API.Controllers
                 return BadRequest();
             }
 
+            if (book.Description == book.Title)
+            {
+                ModelState.AddModelError(nameof(BooksForCreationDto),
+                    "The provided description should be different from the title.");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return new UnprocessableEntityObjectResult(ModelState);
+            }
+
             if (!_libraryRepository.AuthorExists(authorId))
             {
                 return NotFound();
@@ -103,15 +118,28 @@ namespace Library.API.Controllers
                 throw new Exception($"Deleting book {id} for author {authorId} failed on saving.");
             }
 
+            _logger.LogInformation(100, $"Book {id} for author {authorId} was deleted");
+
             return NoContent();
         }
 
         [HttpPut("{id}")]
-        public IActionResult UpdateBookForAuthor(Guid authorId, Guid id, [FromBody] BookForUpdateDto book)  
+        public IActionResult UpdateBookForAuthor(Guid authorId, Guid id, [FromBody] BookForUpdateDto book)
         {
             if (book == null)
             {
                 return BadRequest();
+            }
+
+            if (book.Description == book.Title)
+            {
+                ModelState.AddModelError(nameof(BookForUpdateDto),
+                    "The provided description should be different from the title.");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return new UnprocessableEntityObjectResult(ModelState);
             }
 
             if (!_libraryRepository.AuthorExists(authorId))
@@ -136,7 +164,8 @@ namespace Library.API.Controllers
                 var bookToReturn = AutoMapper.Mapper.Map<BookDto>(bookToAdd);
                 return CreatedAtRoute("GetBookForAuthor", new
                 {
-                    authorId = authorId, id = bookToReturn.Id,
+                    authorId = authorId,
+                    id = bookToReturn.Id,
                 }, bookToReturn);
             }
 
@@ -149,7 +178,7 @@ namespace Library.API.Controllers
                 throw new Exception($"Updating book {id} for author {authorId} failed on save");
             }
 
-            return NoContent(); 
+            return NoContent();
         }
 
         [HttpPatch("{id}")]
@@ -171,7 +200,21 @@ namespace Library.API.Controllers
             if (bookForAuthorFromRepo == null)
             {
                 var bookDto = new BookForUpdateDto();
-                patchDocument.ApplyTo(bookDto);
+                patchDocument.ApplyTo(bookDto, ModelState);
+
+                if (bookDto.Description == bookDto.Title)
+                {
+                    ModelState.AddModelError(nameof(BookForUpdateDto),
+                    "The provided description should be different from the title");
+                }
+
+                TryValidateModel(bookDto);
+
+                if (!ModelState.IsValid)
+                {
+                    return new UnprocessableEntityObjectResult(ModelState);
+                }
+
                 var bookToAdd = AutoMapper.Mapper.Map<Book>(bookDto);
                 bookToAdd.Id = id;
 
@@ -184,13 +227,26 @@ namespace Library.API.Controllers
 
                 var bookToReturn = AutoMapper.Mapper.Map<BookDto>(bookToAdd);
                 return CreatedAtRoute("GetBookForAuthor",
-                    new {authorId = authorId, id = bookToReturn.Id},
+                    new { authorId = authorId, id = bookToReturn.Id },
                     bookToReturn);
             }
 
             var bookToPatch = AutoMapper.Mapper.Map<BookForUpdateDto>(bookForAuthorFromRepo);
 
-            patchDocument.ApplyTo(bookToPatch);
+            patchDocument.ApplyTo(bookToPatch, ModelState);
+
+            if (bookToPatch.Description == bookToPatch.Title)
+            {
+                ModelState.AddModelError(nameof(BookForUpdateDto),
+                    "The provided description should be different from the title");
+            }
+
+            TryValidateModel(bookToPatch);
+
+            if (!ModelState.IsValid)
+            {
+                return new UnprocessableEntityObjectResult(ModelState);
+            }
 
             // add validation
 
