@@ -66,7 +66,7 @@ namespace Library.API.Controllers
                         {
                             //fields = authorsResourceParameters.Fields,
                             //orderBy = authorsResourceParameters.OrderBy,
-                            //searchQuery = authorsResourceParameters.SearchQuery,
+                            searchQuery = authorsResourceParameters.SearchQuery,
                             genre = authorsResourceParameters.Genre,
                             pageNumber = authorsResourceParameters.PageNumber - 1,
                             pageSize = authorsResourceParameters.PageSize
@@ -77,7 +77,7 @@ namespace Library.API.Controllers
                         {
                             //fields = authorsResourceParameters.Fields,
                             //orderBy = authorsResourceParameters.OrderBy,
-                            //searchQuery = authorsResourceParameters.SearchQuery,
+                            searchQuery = authorsResourceParameters.SearchQuery,
                             genre = authorsResourceParameters.Genre,
                             pageNumber = authorsResourceParameters.PageNumber + 1,
                             pageSize = authorsResourceParameters.PageSize
@@ -89,7 +89,7 @@ namespace Library.API.Controllers
                         {
                             //fields = authorsResourceParameters.Fields,
                             //orderBy = authorsResourceParameters.OrderBy,
-                            //searchQuery = authorsResourceParameters.SearchQuery,
+                            searchQuery = authorsResourceParameters.SearchQuery,
                             genre = authorsResourceParameters.Genre,
                             pageNumber = authorsResourceParameters.PageNumber,
                             pageSize = authorsResourceParameters.PageSize
