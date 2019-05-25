@@ -20,6 +20,7 @@ using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using NLog.Extensions.Logging;
 using Microsoft.AspNetCore.Mvc.Routing;
+using Newtonsoft.Json.Serialization;
 
 namespace Library.API
 {
@@ -42,7 +43,11 @@ namespace Library.API
                 setupAction.OutputFormatters.Add(new XmlDataContractSerializerOutputFormatter());
                 setupAction.InputFormatters.Add(new XmlDataContractSerializerInputFormatter());
 
-            });
+            })
+                .AddJsonOptions(options =>
+                {
+                    options.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
+                });
 
             // register the DbContext on the container, getting the connection string from
             // appSettings (note: use this during development; in a production environment,
@@ -60,6 +65,9 @@ namespace Library.API
                     implementationFactory.GetService<IActionContextAccessor>().ActionContext;
                 return new UrlHelper(actioContext);
             });
+
+            services.AddTransient<IPropertyMappingService, PropertyMappingService>();
+            services.AddTransient<ITypeHelperService, TypeHelperService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

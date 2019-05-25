@@ -17,17 +17,31 @@ namespace Library.API.Controllers
     {
         private ILibraryRepository _libraryRepository;
         private IUrlHelper _urlHelper;
+        private IPropertyMappingService _propertyMappingService;
+        private ITypeHelperService _typeHelperService;
 
         public AuthorsController(ILibraryRepository libraryRepository,
-            IUrlHelper urlHelper)
+            IUrlHelper urlHelper, IPropertyMappingService propertyMappingService, ITypeHelperService typeHelperService)
         {
             _libraryRepository = libraryRepository;
             _urlHelper = urlHelper;
+            _propertyMappingService = propertyMappingService;
+            _typeHelperService = typeHelperService;
         }
 
         [HttpGet(Name = "GetAuthors")]
         public IActionResult GetAuthors(AuthorsResourceParameters authorsResourceParameters)
         {
+            if (!_propertyMappingService.ValidMappingExistsFor<AuthorDto, Author>(authorsResourceParameters.OrderBy))
+            {
+                return BadRequest();
+            }
+
+            if (!_typeHelperService.TypeHasProperties<AuthorDto>(authorsResourceParameters.Fields))
+            {
+                return BadRequest();
+            }
+
             var authorsFromRepo = _libraryRepository.GetAuthors(authorsResourceParameters);
 
             var previousPageLink = authorsFromRepo.HasPrevious
@@ -52,7 +66,7 @@ namespace Library.API.Controllers
                 Newtonsoft.Json.JsonConvert.SerializeObject(paginationMetadata));
 
             var authors = AutoMapper.Mapper.Map<IEnumerable<AuthorDto>>(authorsFromRepo);
-            return Ok(authors);
+            return Ok(authors.ShapeData(authorsResourceParameters.Fields));
         }
             
         private string CreateAuthorResourceUri(AuthorsResourceParameters authorsResourceParameters,
@@ -64,8 +78,8 @@ namespace Library.API.Controllers
                     return _urlHelper.Link("GetAuthors",
                         new
                         {
-                            //fields = authorsResourceParameters.Fields,
-                            //orderBy = authorsResourceParameters.OrderBy,
+                            fields = authorsResourceParameters.Fields,
+                            orderBy = authorsResourceParameters.OrderBy,
                             searchQuery = authorsResourceParameters.SearchQuery,
                             genre = authorsResourceParameters.Genre,
                             pageNumber = authorsResourceParameters.PageNumber - 1,
@@ -75,8 +89,8 @@ namespace Library.API.Controllers
                     return _urlHelper.Link("GetAuthors",
                         new
                         {
-                            //fields = authorsResourceParameters.Fields,
-                            //orderBy = authorsResourceParameters.OrderBy,
+                            fields = authorsResourceParameters.Fields,
+                            orderBy = authorsResourceParameters.OrderBy,
                             searchQuery = authorsResourceParameters.SearchQuery,
                             genre = authorsResourceParameters.Genre,
                             pageNumber = authorsResourceParameters.PageNumber + 1,
@@ -87,8 +101,8 @@ namespace Library.API.Controllers
                     return _urlHelper.Link("GetAuthors",
                         new 
                         {
-                            //fields = authorsResourceParameters.Fields,
-                            //orderBy = authorsResourceParameters.OrderBy,
+                            fields = authorsResourceParameters.Fields,
+                            orderBy = authorsResourceParameters.OrderBy,
                             searchQuery = authorsResourceParameters.SearchQuery,
                             genre = authorsResourceParameters.Genre,
                             pageNumber = authorsResourceParameters.PageNumber,
@@ -98,7 +112,7 @@ namespace Library.API.Controllers
         }
 
         [HttpGet("{id}", Name = "GetAuthor")]
-        public IActionResult GetAuthor(Guid id)
+        public IActionResult GetAuthor(Guid id, [FromQuery] string fields)
         {
             var authorFromRepo = _libraryRepository.GetAuthor(id);
 
